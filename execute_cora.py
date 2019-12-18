@@ -36,13 +36,16 @@ print('model: ' + str(model))
 adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = process.load_data(dataset)
 features, spars = process.preprocess_features(features)
 
-nb_nodes = features.shape[0]
-ft_size = features.shape[1]
-nb_classes = y_train.shape[1]
+# Number of Nodes
+nb_nodes = features.shape[0] # 2708
+# Feature Size
+ft_size = features.shape[1] # 1443
+# Number of Clases
+nb_classes = y_train.shape[1] # 7
 
 adj = adj.todense()
 
-features = features[np.newaxis]
+features = features[np.newaxis] # (1, 2708, 1433)
 adj = adj[np.newaxis]
 y_train = y_train[np.newaxis]
 y_val = y_val[np.newaxis]
@@ -55,13 +58,19 @@ biases = process.adj_to_bias(adj, [nb_nodes], nhood=1)
 
 with tf.Graph().as_default():
     with tf.name_scope('input'):
+        # features - [allx, tx]
         ftr_in = tf.placeholder(dtype=tf.float32, shape=(batch_size, nb_nodes, ft_size))
+        # biases - adj_to_bias
         bias_in = tf.placeholder(dtype=tf.float32, shape=(batch_size, nb_nodes, nb_nodes))
+        # y_train
         lbl_in = tf.placeholder(dtype=tf.int32, shape=(batch_size, nb_nodes, nb_classes))
+        # train_mask
         msk_in = tf.placeholder(dtype=tf.int32, shape=(batch_size, nb_nodes))
+        # 0.6, 0.6, True
         attn_drop = tf.placeholder(dtype=tf.float32, shape=())
         ffd_drop = tf.placeholder(dtype=tf.float32, shape=())
         is_train = tf.placeholder(dtype=tf.bool, shape=())
+
 
     logits = model.inference(ftr_in, nb_classes, nb_nodes, is_train,
                                 attn_drop, ffd_drop,

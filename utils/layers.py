@@ -6,14 +6,15 @@ conv1d = tf.layers.conv1d
 def attn_head(seq, out_sz, bias_mat, activation, in_drop=0.0, coef_drop=0.0, residual=False):
     with tf.name_scope('my_attn'):
         if in_drop != 0.0:
+            # For each element of x, with probability rate, outputs 0, and otherwise scales up the input by 1 / (1-rate)
             seq = tf.nn.dropout(seq, 1.0 - in_drop)
 
-        seq_fts = tf.layers.conv1d(seq, out_sz, 1, use_bias=False)
+        seq_fts = conv1d(seq, out_sz, 1, use_bias=False) # (1, 2708, 8)
 
         # simplest self-attention possible
-        f_1 = tf.layers.conv1d(seq_fts, 1, 1)
-        f_2 = tf.layers.conv1d(seq_fts, 1, 1)
-        logits = f_1 + tf.transpose(f_2, [0, 2, 1])
+        f_1 = conv1d(seq_fts, 1, 1) # (1, 2708, 1)
+        f_2 = conv1d(seq_fts, 1, 1) # (1, 2708, 1)
+        logits = f_1 + tf.transpose(f_2, [0, 2, 1]) # (1, 2708, 2708)
         coefs = tf.nn.softmax(tf.nn.leaky_relu(logits) + bias_mat)
 
         if coef_drop != 0.0:
@@ -40,11 +41,11 @@ def sp_attn_head(seq, out_sz, adj_mat, activation, nb_nodes, in_drop=0.0, coef_d
         if in_drop != 0.0:
             seq = tf.nn.dropout(seq, 1.0 - in_drop)
 
-        seq_fts = tf.layers.conv1d(seq, out_sz, 1, use_bias=False)
+        seq_fts = conv1d(seq, out_sz, 1, use_bias=False)
 
         # simplest self-attention possible
-        f_1 = tf.layers.conv1d(seq_fts, 1, 1)
-        f_2 = tf.layers.conv1d(seq_fts, 1, 1)
+        f_1 = conv1d(seq_fts, 1, 1)
+        f_2 = conv1d(seq_fts, 1, 1)
         
         f_1 = tf.reshape(f_1, (nb_nodes, 1))
         f_2 = tf.reshape(f_2, (nb_nodes, 1))

@@ -15,13 +15,14 @@ def adj_to_bias(adj, sizes, nhood=1):
     nb_graphs = adj.shape[0]
     mt = np.empty(adj.shape)
     for g in range(nb_graphs):
-        mt[g] = np.eye(adj.shape[1])
+        mt[g] = np.eye(adj.shape[1]) # mt[g] = I
+        # (A + I)^nhood
         for _ in range(nhood):
-            mt[g] = np.matmul(mt[g], (adj[g] + np.eye(adj.shape[1])))
+            mt[g] = np.matmul(mt[g], (adj[g] + np.eye(adj.shape[1]))) # mt[g] = mt[g] * (I + adj[g])
         for i in range(sizes[g]):
             for j in range(sizes[g]):
                 if mt[g][i][j] > 0.0:
-                    mt[g][i][j] = 1.0
+                    mt[g][i][j] = 1.0 
     return -1e9 * (1.0 - mt)
 
 
@@ -38,6 +39,7 @@ def parse_index_file(filename):
 
 def sample_mask(idx, l):
     """Create mask."""
+    """idx的为True, 长度为l"""
     mask = np.zeros(l)
     mask[idx] = 1
     return np.array(mask, dtype=np.bool)
@@ -53,6 +55,8 @@ def load_data(dataset_str): # {'pubmed', 'citeseer', 'cora'}
             else:
                 objects.append(pkl.load(f))
 
+    # x: (140, 1433), y: (140, 7), tx: (1000, 1433), ty: (1000, 7)
+    # allx: (1708, 1433), ally: (1708, 7), graph: dict(2708)
     x, y, tx, ty, allx, ally, graph = tuple(objects)
     test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
     test_idx_range = np.sort(test_idx_reorder)
@@ -68,13 +72,17 @@ def load_data(dataset_str): # {'pubmed', 'citeseer', 'cora'}
         ty_extended[test_idx_range-min(test_idx_range), :] = ty
         ty = ty_extended
 
+    # features = vstack(allx, tx) (2708, 1433)
     features = sp.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
+    # (2708, 2708)
     adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
 
+    # labels = vstack(ally, ty) (2708, 7)
     labels = np.vstack((ally, ty))
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
+    # 将Labals划分为y_train(0, 140), y_val(140, 640), y_test(1708, 2708)
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+500)
@@ -124,6 +132,7 @@ def load_random_data(size):
 
 def sparse_to_tuple(sparse_mx):
     """Convert sparse matrix to tuple representation."""
+    """ Sparse Format: Coords, Values, Shape """
     def to_tuple(mx):
         if not sp.isspmatrix_coo(mx):
             mx = mx.tocoo()
@@ -154,11 +163,12 @@ def standardize_data(f, train_mask):
 
 def preprocess_features(features):
     """Row-normalize feature matrix and convert to tuple representation"""
+    """每一行归一化为和为1"""
     rowsum = np.array(features.sum(1))
     r_inv = np.power(rowsum, -1).flatten()
     r_inv[np.isinf(r_inv)] = 0.
     r_mat_inv = sp.diags(r_inv)
-    features = r_mat_inv.dot(features)
+    features = r_mat_inv.dot(features) # 点乘
     return features.todense(), sparse_to_tuple(features)
 
 def normalize_adj(adj):
