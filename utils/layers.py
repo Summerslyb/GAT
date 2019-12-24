@@ -15,15 +15,15 @@ def attn_head(seq, out_sz, bias_mat, activation, in_drop=0.0, coef_drop=0.0, res
         f_1 = conv1d(seq_fts, 1, 1) # (1, 2708, 1)
         f_2 = conv1d(seq_fts, 1, 1) # (1, 2708, 1)
         logits = f_1 + tf.transpose(f_2, [0, 2, 1]) # (1, 2708, 2708)
-        coefs = tf.nn.softmax(tf.nn.leaky_relu(logits) + bias_mat)
+        coefs = tf.nn.softmax(tf.nn.leaky_relu(logits) + bias_mat) # (1, 2708, 2708)
 
         if coef_drop != 0.0:
             coefs = tf.nn.dropout(coefs, 1.0 - coef_drop)
         if in_drop != 0.0:
             seq_fts = tf.nn.dropout(seq_fts, 1.0 - in_drop)
 
-        vals = tf.matmul(coefs, seq_fts)
-        ret = tf.contrib.layers.bias_add(vals)
+        vals = tf.matmul(coefs, seq_fts) # (1, 2708, 8)
+        ret = tf.contrib.layers.bias_add(vals) # (1, 2708, 8)
 
         # residual connection
         if residual:

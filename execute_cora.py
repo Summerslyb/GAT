@@ -76,10 +76,10 @@ with tf.Graph().as_default():
                                 attn_drop, ffd_drop,
                                 bias_mat=bias_in,
                                 hid_units=hid_units, n_heads=n_heads,
-                                residual=residual, activation=nonlinearity)
-    log_resh = tf.reshape(logits, [-1, nb_classes])
-    lab_resh = tf.reshape(lbl_in, [-1, nb_classes])
-    msk_resh = tf.reshape(msk_in, [-1])
+                                residual=residual, activation=nonlinearity) # (1, 2708, 7)
+    log_resh = tf.reshape(logits, [-1, nb_classes]) # (2708, 7)
+    lab_resh = tf.reshape(lbl_in, [-1, nb_classes]) # (2708, 7)
+    msk_resh = tf.reshape(msk_in, [-1]) # (2708)
     loss = model.masked_softmax_cross_entropy(log_resh, lab_resh, msk_resh)
     accuracy = model.masked_accuracy(log_resh, lab_resh, msk_resh)
 
